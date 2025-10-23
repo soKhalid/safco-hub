@@ -16,3 +16,13 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Ignore uploaded media files but keep directory structure
+/storage/app/public/media/*
+!/storage/app/public/media/images/
+!/storage/app/public/media/videos/
+!/storage/app/public/media/documents/
+/storage/app/public/media/images/*
+/storage/app/public/media/videos/*
+/storage/app/public/media/documents/*
+!.gitkeep

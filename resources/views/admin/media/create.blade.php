@@ -177,56 +177,62 @@
         const fileInput = $('#fileInput');
         const filePreview = $('#filePreview');
         const uploadPlaceholder = $('.upload-placeholder');
-        let selectedFiles = [];
 
         // Browse button click
-        $('#browseBtn').on('click', function() {
+        $('#browseBtn').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             fileInput.click();
         });
 
         // Upload area click
         uploadArea.on('click', function(e) {
-            if (!$(e.target).closest('.file-item, .btn').length) {
+            if (!$(e.target).closest('.file-item, .btn, .remove-file').length) {
                 fileInput.click();
             }
         });
 
         // File input change
         fileInput.on('change', function() {
-            handleFiles(this.files);
+            if (this.files.length > 0) {
+                displayFiles(this.files);
+                uploadPlaceholder.hide();
+                filePreview.show();
+            }
         });
 
         // Drag and drop events
         uploadArea.on('dragover', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             $(this).addClass('dragover');
         });
 
         uploadArea.on('dragleave', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             $(this).removeClass('dragover');
         });
 
         uploadArea.on('drop', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             $(this).removeClass('dragover');
-            const files = e.originalEvent.dataTransfer.files;
-            handleFiles(files);
-        });
 
-        function handleFiles(files) {
+            const files = e.originalEvent.dataTransfer.files;
             if (files.length > 0) {
-                selectedFiles = Array.from(files);
-                displayFiles();
+                // Set files to input element
+                fileInput[0].files = files;
+                displayFiles(files);
                 uploadPlaceholder.hide();
                 filePreview.show();
             }
-        }
+        });
 
-        function displayFiles() {
+        function displayFiles(files) {
             filePreview.empty();
 
-            selectedFiles.forEach((file, index) => {
+            Array.from(files).forEach((file, index) => {
                 const fileItem = $('<div class="file-item"></div>');
 
                 // File preview or icon
@@ -241,7 +247,7 @@
                         icon = 'file-pdf';
                     } else if (file.type.includes('word')) {
                         icon = 'file-word';
-                    } else if (file.type.includes('powerpoint')) {
+                    } else if (file.type.includes('powerpoint') || file.type.includes('presentation')) {
                         icon = 'file-ppt';
                     }
                     const fileIcon = $('<div class="file-icon"><i class="bi bi-' + icon + '"></i></div>');
@@ -256,15 +262,12 @@
 
                 // Remove button
                 const removeBtn = $('<i class="bi bi-x-circle remove-file"></i>');
-                removeBtn.on('click', function() {
-                    selectedFiles.splice(index, 1);
-                    if (selectedFiles.length === 0) {
-                        filePreview.hide();
-                        uploadPlaceholder.show();
-                        fileInput.val('');
-                    } else {
-                        displayFiles();
-                    }
+                removeBtn.on('click', function(e) {
+                    e.stopPropagation();
+                    // Clear file input and preview
+                    fileInput.val('');
+                    filePreview.hide();
+                    uploadPlaceholder.show();
                 });
                 fileItem.append(removeBtn);
 
@@ -280,25 +283,21 @@
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        // Form submission
+        // Form validation on submit
         $('#uploadForm').on('submit', function(e) {
-            if (selectedFiles.length === 0) {
+            const files = fileInput[0].files;
+
+            if (!files || files.length === 0) {
                 e.preventDefault();
                 alert('Please select at least one file to upload');
                 return false;
             }
 
-            // Create FormData with selected files
-            const formData = new FormData(this);
-
-            // Remove old file inputs and add selected files
-            formData.delete('files[]');
-            selectedFiles.forEach(file => {
-                formData.append('files[]', file);
-            });
-
             // Show loading state
             $('#submitBtn').html('<span class="spinner-border spinner-border-sm me-2"></span>Uploading...').prop('disabled', true);
+
+            // Let the form submit normally
+            return true;
         });
     });
 </script>

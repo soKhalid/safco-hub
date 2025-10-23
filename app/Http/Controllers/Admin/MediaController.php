@@ -64,29 +64,47 @@ class MediaController extends Controller
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'files' => 'required|array',
-            'files.*' => 'required|file|max:10240', // 10MB max
-            'is_featured' => 'boolean',
-            'is_active' => 'boolean',
+            'files' => 'required|array|min:1',
+            'files.*' => 'required|file|max:10240|mimes:jpeg,jpg,png,gif,webp,mp4,webm,mov,pdf,doc,docx,ppt,pptx',
+            'is_featured' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+        ], [
+            'files.required' => 'Please select at least one file to upload.',
+            'files.*.max' => 'Each file must not exceed 10MB.',
+            'files.*.mimes' => 'Invalid file type. Please upload images, videos, or documents only.',
         ]);
 
         $uploadedFiles = [];
+        $errors = [];
 
-        foreach ($request->file('files') as $file) {
+        if (!$request->hasFile('files')) {
+            return back()->with('error', 'No files were selected.')->withInput();
+        }
+
+        foreach ($request->file('files') as $index => $file) {
             try {
                 $media = $this->processFileUpload($file, $validated);
                 $uploadedFiles[] = $media;
             } catch (\Exception $e) {
-                // Log error and continue with other files
-                \Log::error('File upload error: ' . $e->getMessage());
+                // Log error and collect error messages
+                \Log::error('File upload error for file ' . ($index + 1) . ': ' . $e->getMessage());
+                $errors[] = 'File ' . ($index + 1) . ': ' . $e->getMessage();
             }
         }
 
         if (count($uploadedFiles) === 0) {
-            return back()->with('error', 'No files were uploaded successfully.');
+            $errorMessage = 'No files were uploaded successfully.';
+            if (!empty($errors)) {
+                $errorMessage .= ' Errors: ' . implode(', ', $errors);
+            }
+            return back()->with('error', $errorMessage)->withInput();
         }
 
         $message = count($uploadedFiles) . ' file(s) uploaded successfully.';
+        if (!empty($errors)) {
+            $message .= ' However, ' . count($errors) . ' file(s) failed.';
+        }
+
         return redirect()->route('admin.media.index')->with('success', $message);
     }
 
@@ -125,8 +143,8 @@ class MediaController extends Controller
             'mime_type' => $mimeType,
             'file_size' => round($file->getSize() / 1024), // Convert to KB
             'thumbnail_path' => $thumbnailPath,
-            'is_featured' => $data['is_featured'] ?? false,
-            'is_active' => $data['is_active'] ?? true,
+            'is_featured' => isset($data['is_featured']) && $data['is_featured'] ? true : false,
+            'is_active' => !isset($data['is_active']) || $data['is_active'] ? true : false,
         ]);
     }
 
