@@ -57,7 +57,27 @@ Drag & drop interface for easy media uploads with real-time preview.
 
 ## Installation Guide
 
-### Step 1: Clone or Download
+### Quick Setup (Automated)
+
+We provide a setup script that automates the installation:
+
+```bash
+cd safco-hub
+chmod +x setup.sh
+./setup.sh
+```
+
+This script will:
+- Create `.env` file
+- Install dependencies
+- Generate application key
+- Create storage link
+- Set up directories and permissions
+- Optionally run migrations and seeders
+
+### Manual Setup (Step by Step)
+
+#### Step 1: Clone or Download
 
 ```bash
 cd /path/to/your/projects
@@ -65,7 +85,7 @@ git clone <repository-url> safco-hub
 cd safco-hub
 ```
 
-### Step 2: Install Dependencies
+#### Step 2: Install Dependencies
 
 ```bash
 # Install PHP dependencies
@@ -75,7 +95,7 @@ composer install
 npm install
 ```
 
-### Step 3: Environment Configuration
+#### Step 3: Environment Configuration
 
 ```bash
 # Copy environment file
@@ -85,7 +105,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-### Step 4: Configure Database
+#### Step 4: Configure Database
 
 Edit `.env` file and update database credentials:
 
@@ -98,7 +118,7 @@ DB_USERNAME=your_username
 DB_PASSWORD=your_password
 ```
 
-### Step 5: Create Database
+#### Step 5: Create Database
 
 ```bash
 # Create database (or create manually via phpMyAdmin)
@@ -107,7 +127,7 @@ CREATE DATABASE safco_media_hub;
 exit;
 ```
 
-### Step 6: Run Migrations & Seeders
+#### Step 6: Run Migrations & Seeders
 
 ```bash
 # Run migrations
@@ -122,20 +142,28 @@ This will create:
 - Regular user: `user@safco.com` / `password`
 - 8 default categories
 
-### Step 7: Create Storage Link
+#### Step 7: Create Storage Link ⚠️ IMPORTANT
 
 ```bash
 php artisan storage:link
 ```
 
-### Step 8: Set Permissions
+**This step is CRITICAL!** Without it, uploaded images won't display.
+
+If you have issues, run:
+```bash
+chmod +x fix-storage.sh
+./fix-storage.sh
+```
+
+#### Step 8: Set Permissions
 
 ```bash
 # Set proper permissions for storage and cache
 chmod -R 775 storage bootstrap/cache
 ```
 
-### Step 9: Compile Assets
+#### Step 9: Compile Assets
 
 ```bash
 # Development
@@ -145,7 +173,7 @@ npm run dev
 npm run build
 ```
 
-### Step 10: Start Development Server
+#### Step 10: Start Development Server
 
 ```bash
 php artisan serve
@@ -288,12 +316,28 @@ safco-hub/
 
 ## Troubleshooting
 
-### Issue: Images not displaying
+### Issue: Images not displaying (MOST COMMON)
 
-**Solution:** Make sure you've created the storage link:
+**Symptoms:**
+- Files upload successfully
+- You can see the filename/text
+- But no image preview shows
+- 404 errors in browser console for images
+
+**Solution:**
+The storage symbolic link is missing! Run:
+
 ```bash
 php artisan storage:link
 ```
+
+Or use our fix script:
+```bash
+chmod +x fix-storage.sh
+./fix-storage.sh
+```
+
+**What this does:** Creates a symbolic link from `public/storage` → `storage/app/public` so uploaded files are accessible via web URLs.
 
 ### Issue: Upload fails
 
