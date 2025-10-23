@@ -172,106 +172,129 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        const uploadArea = $('#uploadArea');
-        const fileInput = $('#fileInput');
-        const filePreview = $('#filePreview');
-        const uploadPlaceholder = $('.upload-placeholder');
+    // Use vanilla JavaScript to avoid jQuery conflicts
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const uploadPlaceholder = document.querySelector('.upload-placeholder');
+        const browseBtn = document.getElementById('browseBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
 
         // Browse button click
-        $('#browseBtn').on('click', function(e) {
+        browseBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             fileInput.click();
         });
 
         // Upload area click
-        uploadArea.on('click', function(e) {
-            if (!$(e.target).closest('.file-item, .btn, .remove-file').length) {
-                fileInput.click();
+        uploadArea.addEventListener('click', function(e) {
+            // Only trigger if clicking on the upload area itself, not on buttons or file items
+            if (e.target === uploadArea || e.target.closest('.upload-placeholder')) {
+                if (!e.target.classList.contains('btn') && !e.target.closest('.file-item')) {
+                    fileInput.click();
+                }
             }
         });
 
         // File input change
-        fileInput.on('change', function() {
-            if (this.files.length > 0) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
                 displayFiles(this.files);
-                uploadPlaceholder.hide();
-                filePreview.show();
+                uploadPlaceholder.style.display = 'none';
+                filePreview.style.display = 'block';
             }
         });
 
         // Drag and drop events
-        uploadArea.on('dragover', function(e) {
+        uploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            $(this).addClass('dragover');
+            uploadArea.classList.add('dragover');
         });
 
-        uploadArea.on('dragleave', function(e) {
+        uploadArea.addEventListener('dragleave', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            $(this).removeClass('dragover');
+            uploadArea.classList.remove('dragover');
         });
 
-        uploadArea.on('drop', function(e) {
+        uploadArea.addEventListener('drop', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            $(this).removeClass('dragover');
+            uploadArea.classList.remove('dragover');
 
-            const files = e.originalEvent.dataTransfer.files;
-            if (files.length > 0) {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
                 // Set files to input element
-                fileInput[0].files = files;
+                fileInput.files = files;
                 displayFiles(files);
-                uploadPlaceholder.hide();
-                filePreview.show();
+                uploadPlaceholder.style.display = 'none';
+                filePreview.style.display = 'block';
             }
         });
 
         function displayFiles(files) {
-            filePreview.empty();
+            filePreview.innerHTML = '';
 
             Array.from(files).forEach((file, index) => {
-                const fileItem = $('<div class="file-item"></div>');
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
 
                 // File preview or icon
                 if (file.type.startsWith('image/')) {
-                    const img = $('<img>').attr('src', URL.createObjectURL(file));
-                    fileItem.append(img);
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    fileItem.appendChild(img);
                 } else {
                     let icon = 'file-earmark';
                     if (file.type.startsWith('video/')) {
                         icon = 'play-circle';
                     } else if (file.type.includes('pdf')) {
                         icon = 'file-pdf';
-                    } else if (file.type.includes('word')) {
+                    } else if (file.type.includes('word') || file.type.includes('document')) {
                         icon = 'file-word';
                     } else if (file.type.includes('powerpoint') || file.type.includes('presentation')) {
                         icon = 'file-ppt';
                     }
-                    const fileIcon = $('<div class="file-icon"><i class="bi bi-' + icon + '"></i></div>');
-                    fileItem.append(fileIcon);
+
+                    const fileIcon = document.createElement('div');
+                    fileIcon.className = 'file-icon';
+                    fileIcon.innerHTML = '<i class="bi bi-' + icon + '"></i>';
+                    fileItem.appendChild(fileIcon);
                 }
 
                 // File info
-                const fileInfo = $('<div class="file-info"></div>');
-                fileInfo.append('<div class="file-name">' + file.name + '</div>');
-                fileInfo.append('<div class="file-size">' + formatFileSize(file.size) + '</div>');
-                fileItem.append(fileInfo);
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'file-info';
+
+                const fileName = document.createElement('div');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name;
+
+                const fileSize = document.createElement('div');
+                fileSize.className = 'file-size';
+                fileSize.textContent = formatFileSize(file.size);
+
+                fileInfo.appendChild(fileName);
+                fileInfo.appendChild(fileSize);
+                fileItem.appendChild(fileInfo);
 
                 // Remove button
-                const removeBtn = $('<i class="bi bi-x-circle remove-file"></i>');
-                removeBtn.on('click', function(e) {
+                const removeBtn = document.createElement('i');
+                removeBtn.className = 'bi bi-x-circle remove-file';
+                removeBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     // Clear file input and preview
-                    fileInput.val('');
-                    filePreview.hide();
-                    uploadPlaceholder.show();
+                    fileInput.value = '';
+                    filePreview.style.display = 'none';
+                    uploadPlaceholder.style.display = 'block';
                 });
-                fileItem.append(removeBtn);
+                fileItem.appendChild(removeBtn);
 
-                filePreview.append(fileItem);
+                filePreview.appendChild(fileItem);
             });
         }
 
@@ -284,8 +307,8 @@
         }
 
         // Form validation on submit
-        $('#uploadForm').on('submit', function(e) {
-            const files = fileInput[0].files;
+        uploadForm.addEventListener('submit', function(e) {
+            const files = fileInput.files;
 
             if (!files || files.length === 0) {
                 e.preventDefault();
@@ -294,7 +317,8 @@
             }
 
             // Show loading state
-            $('#submitBtn').html('<span class="spinner-border spinner-border-sm me-2"></span>Uploading...').prop('disabled', true);
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+            submitBtn.disabled = true;
 
             // Let the form submit normally
             return true;
